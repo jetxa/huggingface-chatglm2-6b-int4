@@ -32,7 +32,7 @@ ChatGLM**2**-6B is the second-generation version of the open-source bilingual (C
 ## 软件依赖
 
 ```shell
-pip install protobuf transformers==4.27.1 cpm_kernels torch>=2.0 gradio mdtex2html sentencepiece accelerate
+pip install protobuf transformers==4.30.2 cpm_kernels torch>=2.0 gradio mdtex2html sentencepiece accelerate
 ```
 
 ## 代码调用 
