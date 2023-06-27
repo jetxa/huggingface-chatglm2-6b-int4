@@ -702,6 +702,9 @@ class ChatGLMModel(ChatGLMPreTrainedModel):
                                         dtype=config.torch_dtype, **init_kwargs)
         self.gradient_checkpointing = False
 
+    def get_input_embeddings(self):
+        return self.embedding.word_embeddings
+
     def forward(
             self,
             input_ids,
@@ -932,7 +935,7 @@ class ChatGLMForConditionalGeneration(ChatGLMPreTrainedModel):
 
 
     @torch.no_grad()
-    def chat(self, tokenizer, query: str, history: List[Tuple[str, str]] = None, max_length: int = 2048, num_beams=1,
+    def chat(self, tokenizer, query: str, history: List[Tuple[str, str]] = None, max_length: int = 8192, num_beams=1,
              do_sample=True, top_p=0.8, temperature=0.8, logits_processor=None, **kwargs):
         if history is None:
             history = []
@@ -951,7 +954,7 @@ class ChatGLMForConditionalGeneration(ChatGLMPreTrainedModel):
 
     @torch.no_grad()
     def stream_chat(self, tokenizer, query: str, history: List[Tuple[str, str]] = None, past_key_values=None,
-                    max_length: int = 2048, do_sample=True, top_p=0.8, temperature=0.8, logits_processor=None,
+                    max_length: int = 8192, do_sample=True, top_p=0.8, temperature=0.8, logits_processor=None,
                     return_past_key_values=False, **kwargs):
         if history is None:
             history = []
@@ -976,12 +979,13 @@ class ChatGLMForConditionalGeneration(ChatGLMPreTrainedModel):
                 outputs, past_key_values = outputs
             outputs = outputs.tolist()[0][len(inputs["input_ids"][0]):]
             response = tokenizer.decode(outputs)
-            response = self.process_response(response)
-            new_history = history + [(query, response)]
-            if return_past_key_values:
-                yield response, new_history, past_key_values
-            else:
-                yield response, new_history
+            if response and response[-1] != "�":
+                response = self.process_response(response)
+                new_history = history + [(query, response)]
+                if return_past_key_values:
+                    yield response, new_history, past_key_values
+                else:
+                    yield response, new_history
 
     @torch.no_grad()
     def stream_generate(
