@@ -2,6 +2,7 @@ from transformers import PretrainedConfig
 
 
 class ChatGLMConfig(PretrainedConfig):
+    model_type = "chatglm"
     def __init__(
         self,
         num_layers=28,
