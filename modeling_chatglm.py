@@ -68,11 +68,12 @@ class PrefixEncoder(torch.nn.Module):
         self.prefix_projection = config.prefix_projection
         if self.prefix_projection:
             # Use a two-layer MLP to encode the prefix
-            self.embedding = torch.nn.Embedding(config.pre_seq_len, config.hidden_size)
+            kv_size = config.num_layers * config.kv_channels * config.multi_query_group_num * 2
+            self.embedding = torch.nn.Embedding(config.pre_seq_len, kv_size)
             self.trans = torch.nn.Sequential(
-                torch.nn.Linear(config.hidden_size, config.hidden_size),
+                torch.nn.Linear(kv_size, config.hidden_size),
                 torch.nn.Tanh(),
-                torch.nn.Linear(config.hidden_size, config.num_layers * config.hidden_size * 2)
+                torch.nn.Linear(config.hidden_size, kv_size)
             )
         else:
             self.embedding = torch.nn.Embedding(config.pre_seq_len,
@@ -1013,7 +1014,7 @@ class ChatGLMForConditionalGeneration(ChatGLMPreTrainedModel):
         inputs = inputs.to(self.device)
         return inputs
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def chat(self, tokenizer, query: str, history: List[Tuple[str, str]] = None, max_length: int = 8192, num_beams=1,
              do_sample=True, top_p=0.8, temperature=0.8, logits_processor=None, **kwargs):
         if history is None:
@@ -1031,7 +1032,7 @@ class ChatGLMForConditionalGeneration(ChatGLMPreTrainedModel):
         history = history + [(query, response)]
         return response, history
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def stream_chat(self, tokenizer, query: str, history: List[Tuple[str, str]] = None, past_key_values=None,
                     max_length: int = 8192, do_sample=True, top_p=0.8, temperature=0.8, logits_processor=None,
                     return_past_key_values=False, **kwargs):
@@ -1068,7 +1069,7 @@ class ChatGLMForConditionalGeneration(ChatGLMPreTrainedModel):
                 else:
                     yield response, new_history
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def stream_generate(
             self,
             input_ids,
